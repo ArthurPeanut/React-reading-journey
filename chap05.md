@@ -160,8 +160,126 @@ function useDataFetch(url) {
                 return response.json();
             })
             .then((data) => {
-                
+
             })
     })
 }
 ```
+
+
+2.被增强的子组件`DataDisplay`专注于展示数据，不负责加载数据。
+```jsx
+function DataDisplay({ data, loading, error }) {
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  if (error) {
+    return <p>Error: {error}</p>;
+  }
+
+  return (
+    <ul>
+      {data.map((item) => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+3.使用HOC增强组件
+将`DataDisplay`与`withDataFetching`HOC结合，为其提供数据加载能力。
+```jsx
+const EnhancedDataDisplay = withDataFetching(
+  DataDisplay,
+  "https://jsonplaceholder.typicode.com/users"
+);
+
+export default function App() {
+  return (
+    <div>
+      <h1>Data Fetching with HOC</h1>
+      <EnhancedDataDisplay />
+    </div>
+  );
+}
+```
+通过增强组件，分离了数据获取和展示的逻辑，使组件更易复用和测试。
+
+### react-refetch
+为什么 react-refetch 不再流行？
+**HOC 方式已经过时**
+
+react-refetch 主要依赖 HOC（高阶组件） 来管理数据获取，而现代 React 推荐使用 Hooks（如 useEffect + fetch） 或 数据获取库（如 react-query、SWR）。
+HOC 会导致组件嵌套过深（Wrapper Hell），增加调试难度，而 Hooks 方式更直观、简洁。
+官方未积极维护
+
+react-refetch 的最新版本已经很久未更新，在 GitHub 上的维护活跃度较低。
+目前官方推荐使用 react-query 或 SWR 作为更现代的替代方案。
+Hooks 提供更好的解决方案
+
+useEffect 和 useState 让开发者可以直接在函数组件中控制数据加载，而不需要通过 HOC 进行数据注入。
+useReducer 和 useContext 也提供了更灵活的全局状态管理方式。
+现代数据获取库的崛起
+
+React Query（react-query）
+SWR（由 Next.js 团队开发）
+这些库提供了 缓存、数据同步、自动刷新、错误处理 等功能，比 react-refetch 更强大、更易用。
+
+1. `react-query`：
+使用`useQuery`获取数据：
+```jsx
+import { useQuery } from "@tanstack/react-query";
+
+function FetchData() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["posts"],
+    queryFn: () =>
+      fetch("https://jsonplaceholder.typicode.com/posts").then((res) => res.json()),
+  });
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  return (
+    <ul>
+      {data.slice(0, 10).map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+
+export default FetchData;
+```
+`react-query` 提供：
+* 自动缓存和数据同步
+* 后台数据刷新
+* 内置错误处理
+* 轻松实现分页、懒加载、轮询
+2. `SWR`
+使用`useSWR`获取数据
+```jsx
+import useSWR from "swr";
+
+const fetcher = (url) => fetch(url).then((res) => res.json());
+
+function FetchData() {
+  const { data, error } = useSWR("https://jsonplaceholder.typicode.com/posts", fetcher);
+
+  if (!data) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  return (
+    <ul>
+      {data.slice(0, 10).map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+
+export default FetchData;
+```
+API更简单。
